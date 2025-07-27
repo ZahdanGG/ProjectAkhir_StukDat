@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  php:
+    container_name: php
+    build:
+      context: ./php
+    entrypoint: ["sh", "/docker-entrypoint.sh"]
+    environment:
+      - PROJECT_NAME=pa_sd
+      - XDEBUG=false
+    volumes:
+      - ./src:/var/www/html
+      - ./src/database/database.sqlite:/var/www/html/src/database/database.sqlite
+      - ./php/docker-entrypoint.sh:/docker-entrypoint.sh
+    depends_on:
+      db:
+        condition: service_healthy
+
+  nginx:
+    build:
+      context: ./nginx
+    container_name: pa_sd_nginx
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - php
+
+  db:
+    image: mariadb:10.11
+    container_name: pa_sd_db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "13306:3306"
+    environment:
+      MYSQL_DATABASE: pa_sd
+      MYSQL_ROOT_PASSWORD: p455w0rd
+    volumes:
+      - ./db/conf.d:/etc/mysql/conf.d
+      - ./db/data:/var/lib/mysql

@@ -1,0 +1,9 @@
+/vendor
+/node_modules
+.env
+/database/*.sqlite
+/storage/*.key
+/public/storage
+.idea
+*.log
+db/data/
